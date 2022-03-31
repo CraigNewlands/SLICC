@@ -15,3 +15,5 @@ The three graphs showing the kalman filter at work can also be found in this fol
 - x_velocity.png
 - y_velocity.png
 - yaw_velocity.png
+
+This is also a useful guide if the above does not work: https://code.visualstudio.com/docs/cpp/config-linux
