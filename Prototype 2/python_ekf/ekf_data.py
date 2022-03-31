@@ -34,8 +34,8 @@ class EKF(Node):
         # self.gps_velocity_data_sub = message_filters.Subscriber(self, TwistWithCovarianceStamped, 'fix_velocity')
         # self.sbg_imu_data_sub = message_filters.Subscriber(self, Imu, '/imu/data')
 
+        # Synchronises the data from the bag file subscribers
         time_synchronizer = message_filters.ApproximateTimeSynchronizer([self.wheel_data_sub, self.sbg_imu_data_sub, self.zed_imu_data_sub], queue_size=10, slop=1)
-        # time_synchronizer = message_filters.ApproximateTimeSynchronizer([self.wheel_data_sub, self.zed_imu_data_sub], queue_size=10, slop=1)
         time_synchronizer.registerCallback(self.callback)
 
         self.previous_time = time.time()
@@ -65,7 +65,8 @@ class EKF(Node):
                                                       [0, 0, 1]])
 
                                         
-
+    # Returns the new state based on the prediction state measurement and the previous state
+    # Uses the motion model to calcualte the new state
     def state_prediction(self, previous_state, wheel_control_data, dt):
 
         return asarray([previous_state[0] + previous_state[3] * dt,
@@ -74,28 +75,26 @@ class EKF(Node):
                         previous_state[3],
                         previous_state[4]])
 
-
+    # Applies the measurment model
     def measurement_prediction(self, predicted_state):
 
         predicted_measurement = asarray([predicted_state[2], predicted_state[3], predicted_state[4]])
 
         return predicted_measurement
 
-
+    # Takes in the sensor measurements and applies the EKF equations 
     def callback(self, wheel_data, sbg_data, zed_data):
-    # def callback(self, wheel_data, zed_data):
+        # Assigns the sensor measurement values that we need to variables
         wheel_control_data = np.array([wheel_data.speeds.steering])
         sbg_imu_data = np.array([sbg_data.angular_velocity.z, sbg_data.linear_acceleration.x, sbg_data.linear_acceleration.y])
         zed_imu_data = np.array([zed_data.angular_velocity.z, zed_data.linear_acceleration.x, zed_data.linear_acceleration.y])
 
-        # gps_velocity_data = np.array([gps_data.twist.twist.linear.x, gps_data.twist.twist.linear.y, gps_data.twist.twist.linear.z])
-        # print("Zed Linear Acceleration = " + str(zed_linear_acc_data))
-        # print("DGPS Linear Velocity = " + str(gps_velocity_data))
-
+        # Calculates the change in time between sensor readings
         current_time = time.time()
         dt = time.time() - self.previous_time
         self.previous_time = current_time
 
+        # Computes the Jacobian for the prediction step
         G = jacfwd(lambda steering: self.state_prediction(self.x, steering, dt), 0)(wheel_control_data)
 
         # Prediction step - control data (steering angle)
@@ -105,8 +104,10 @@ class EKF(Node):
 
         # Correction step - SBG IMU data
         h = self.measurement_prediction(self.x)
+        # Computes the Jacobian for the correction step
         H = jacfwd(lambda x: self.measurement_prediction(x))(self.x)
 
+        # Computes the Kalman gain
         K = self.P.dot(H.transpose()).dot(inv(H.dot(self.P).dot(H.transpose()) + self.measurement_noise_covariance))
 
         self.x = self.x + K.dot(sbg_imu_data - h)
@@ -117,8 +118,10 @@ class EKF(Node):
 
         # Correction step - ZED IMU data
         h = self.measurement_prediction(self.x)
+        # Computes the Jacobian for the correction step
         H = jacfwd(lambda x: self.measurement_prediction(x))(self.x)
 
+        # Computes the Kalman gain
         K = self.P.dot(H.transpose()).dot(inv(H.dot(self.P).dot(H.transpose()) + self.measurement_noise_covariance))
 
         self.x = self.x + K.dot(zed_imu_data - h)
@@ -127,8 +130,9 @@ class EKF(Node):
         self.P = (I - K.dot(H)).dot(self.P)
 
 
-        print(self.x)
+        # print(self.x)
 
+        # Publishes the velocity estimate
         msg = TwistWithCovarianceStamped()
         msg.header.frame_id = 'base_footprint'
         msg.header.stamp = self.get_clock().now().to_msg()
