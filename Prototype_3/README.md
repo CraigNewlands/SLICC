@@ -3,8 +3,8 @@ This EKF implementation in C++ estimates the velocity given the sensor inputs. S
 
 ## How to use
 1. Install ROS2 Galactic from here: https://docs.ros.org/en/galactic/Installation.html
-2. Download to bag file from here: 
-3. Pull this folder
+2. Download to bag file from here: https://uoe-my.sharepoint.com/:f:/g/personal/s1943761_ed_ac_uk/EmqO_kZhVrhOhhuyR0Ry3tkBB3BL281DnJLJBQjGLJHB2w?e=q03XYJ
+3. Pull this SLICC repo
 4. Source ros2 `source /opt/ros/galactic/setup.zsh` or ` /opt/ros/galactic/setup.bash`
 5. Go to the Prototype_3 folder and run `colcon build --packages-select sensor_fusion` 
 7. Run the bag file in another terminal `ros2 bag play -l <bag file name>`
