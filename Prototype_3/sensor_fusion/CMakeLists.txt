@@ -7,11 +7,25 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(eufs_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
-add_executable(ekf src/ekf.cpp)
+add_executable(ekf 
+  src/ekf.cpp
+  src/logging.cpp
+  )
+
+ament_target_dependencies(ekf
+  rclcpp
+  Eigen3
+  eufs_msgs
+  sensor_msgs
+  geometry_msgs
+)
+
 target_include_directories(ekf PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
